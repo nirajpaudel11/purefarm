@@ -66,7 +66,7 @@
 			<li><a href="subcategory.php"><i class="menu-icon icon-tasks"></i>Sub Category </a></li>
 			<li><a href="insert-product.php"><i class="menu-icon icon-paste"></i>Insert Product </a></li>
 			<li><a href="manage-products.php"><i class="menu-icon icon-table"></i>Manage Products </a></li>
-			<li><a href="bundle_suggestions.php"><i class="menu-icon icon-table"></i>Manage Bundled Products </a></li>
+			<li><a href="admin_clusters.php"><i class="menu-icon icon-table"></i>Clusterred Products </a></li>
 
 		</ul><!--/.widget-nav-->
 
