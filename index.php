@@ -129,9 +129,9 @@ if (isset($_GET['action']) && $_GET['action'] == "add") {
                         <div class="col-md-4">
                             <select name="cluster" class="form-control">
                                 <option value="">All Products</option>
-                                <option value="0" <?php if (isset($_GET['cluster']) && $_GET['cluster'] === '0') echo "selected"; ?>>Basic Quality</option>
+                                <option value="0" <?php if (isset($_GET['cluster']) && $_GET['cluster'] === '0') echo "selected"; ?>>Top Rated</option>
                                 <option value="1" <?php if (isset($_GET['cluster']) && $_GET['cluster'] === '1') echo "selected"; ?>>Recommended</option>
-                                <option value="2" <?php if (isset($_GET['cluster']) && $_GET['cluster'] === '2') echo "selected"; ?>>Top Rated</option>
+                                <option value="2" <?php if (isset($_GET['cluster']) && $_GET['cluster'] === '2') echo "selected"; ?>>Basic Quality</option>
                             </select>
                         </div>
 
