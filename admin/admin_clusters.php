@@ -8,9 +8,9 @@ if ($mysqli->connect_error) {
 // Helper: Human-readable cluster name
 function getClusterName($label) {
     switch ($label) {
-        case 0: return "Low Performing";
+        case 2: return "Low Performing";
         case 1: return "Moderate Performing";
-        case 2: return "High Performing";
+        case 0: return "High Performing";
         default: return "Unknown Cluster";
     }
 }
@@ -541,9 +541,9 @@ $mysqli->close();
         // Convert cluster label to human readable name
         function getClusterName(label) {
             switch (parseInt(label)) {
-                case 0: return "Low Performing";
+                case 2: return "Low Performing";
                 case 1: return "Moderate Performing";
-                case 2: return "High Performing";
+                case 0: return "High Performing";
                 default: return "Unknown";
             }
         }
