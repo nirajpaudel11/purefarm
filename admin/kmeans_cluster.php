@@ -26,18 +26,19 @@ if (empty($data)) {
 }
 
 // --- Enhanced feature engineering for performance-based clustering ---
-function prepareFeatures(array $data): array {
+function prepareFeatures(array $data): array
+{
     $features = [];
     foreach ($data as $item) {
         // Calculate conversion rate (purchases/views)
         $conversionRate = $item['views'] > 0 ? $item['purchases'] / $item['views'] : 0;
-        
+
         // Calculate revenue (purchases * price)
         $revenue = $item['purchases'] * $item['price'];
-        
+
         // Calculate engagement score (views relative to other products)
         $engagementScore = $item['views'];
-        
+
         $features[] = [
             'conversion_rate' => $conversionRate,
             'revenue' => $revenue,
@@ -49,7 +50,8 @@ function prepareFeatures(array $data): array {
 }
 
 // --- Improved normalization with min-max scaling ---
-function normalize(array $features): array {
+function normalize(array $features): array
+{
     $featureNames = ['conversion_rate', 'revenue', 'engagement', 'purchases'];
     $min = [];
     $max = [];
@@ -72,7 +74,8 @@ function normalize(array $features): array {
 }
 
 // --- Euclidean distance calculation ---
-function euclidean(array $a, array $b): float {
+function euclidean(array $a, array $b): float
+{
     $sum = 0;
     for ($i = 0; $i < count($a); $i++) {
         $sum += pow($a[$i] - $b[$i], 2);
@@ -81,23 +84,24 @@ function euclidean(array $a, array $b): float {
 }
 
 // --- Improved K-Means++ initialization ---
-function initializeCentroids(array $data, int $k): array {
+function initializeCentroids(array $data, int $k): array
+{
     if (count($data) < $k) {
         throw new Exception("Not enough data points for $k clusters");
     }
-    
+
     $centroids = [];
     $n = count($data);
-    
+
     // Choose first centroid randomly (using deterministic seed for consistency)
     mt_srand(42); // Fixed seed for reproducible results
     $centroids[] = $data[mt_rand(0, $n - 1)];
-    
+
     // Choose remaining centroids using K-means++ method
     for ($c = 1; $c < $k; $c++) {
         $distances = [];
         $totalDistance = 0;
-        
+
         // Calculate squared distances to nearest centroid for each point
         foreach ($data as $i => $point) {
             $minDist = INF;
@@ -108,11 +112,11 @@ function initializeCentroids(array $data, int $k): array {
             $distances[$i] = $minDist * $minDist; // Squared distance
             $totalDistance += $distances[$i];
         }
-        
+
         // Choose next centroid with probability proportional to squared distance
         $target = mt_rand() / mt_getrandmax() * $totalDistance;
         $cumulative = 0;
-        
+
         foreach ($distances as $i => $dist) {
             $cumulative += $dist;
             if ($cumulative >= $target) {
@@ -121,18 +125,19 @@ function initializeCentroids(array $data, int $k): array {
             }
         }
     }
-    
+
     return $centroids;
 }
 
 // --- Assign points to nearest centroid ---
-function assignClusters(array $data, array $centroids): array {
+function assignClusters(array $data, array $centroids): array
+{
     $assignments = [];
-    
+
     foreach ($data as $i => $point) {
         $minDistance = INF;
         $bestCluster = 0;
-        
+
         foreach ($centroids as $j => $centroid) {
             $distance = euclidean($point, $centroid);
             if ($distance < $minDistance) {
@@ -140,28 +145,29 @@ function assignClusters(array $data, array $centroids): array {
                 $bestCluster = $j;
             }
         }
-        
+
         $assignments[$i] = $bestCluster;
     }
-    
+
     return $assignments;
 }
 
 // --- Update centroids based on cluster assignments ---
-function updateCentroids(array $data, array $assignments, int $k): array {
+function updateCentroids(array $data, array $assignments, int $k): array
+{
     $newCentroids = [];
     $dimensions = count($data[0]);
-    
+
     for ($cluster = 0; $cluster < $k; $cluster++) {
         $clusterPoints = [];
-        
+
         // Collect all points in this cluster
         foreach ($assignments as $i => $assignedCluster) {
             if ($assignedCluster === $cluster) {
                 $clusterPoints[] = $data[$i];
             }
         }
-        
+
         if (empty($clusterPoints)) {
             // If cluster is empty, keep the old centroid or reinitialize
             $newCentroids[$cluster] = array_fill(0, $dimensions, 0);
@@ -173,32 +179,33 @@ function updateCentroids(array $data, array $assignments, int $k): array {
                     $centroid[$d] += $point[$d];
                 }
             }
-            
+
             // Average the values
             for ($d = 0; $d < $dimensions; $d++) {
                 $centroid[$d] /= count($clusterPoints);
             }
-            
+
             $newCentroids[$cluster] = $centroid;
         }
     }
-    
+
     return $newCentroids;
 }
 
 // --- Check if centroids have converged ---
-function hasConverged(array $oldCentroids, array $newCentroids, float $tolerance = 1e-6): bool {
+function hasConverged(array $oldCentroids, array $newCentroids, float $tolerance = 1e-6): bool
+{
     if (count($oldCentroids) !== count($newCentroids)) {
         return false;
     }
-    
+
     foreach ($oldCentroids as $i => $oldCentroid) {
         $distance = euclidean($oldCentroid, $newCentroids[$i]);
         if ($distance > $tolerance) {
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -219,12 +226,12 @@ $assignments = [];
 for ($iter = 0; $iter < $maxIterations; $iter++) {
     $assignments = assignClusters($normalizedFeatures, $centroids);
     $newCentroids = updateCentroids($normalizedFeatures, $assignments, $k);
-    
+
     if (hasConverged($centroids, $newCentroids, $tolerance)) {
         echo "<!-- K-means converged after $iter iterations -->\n";
         break;
     }
-    
+
     $centroids = $newCentroids;
 }
 
@@ -237,18 +244,18 @@ for ($cluster = 0; $cluster < $k; $cluster++) {
             $clusterProducts[] = $i;
         }
     }
-    
+
     if (!empty($clusterProducts)) {
         $totalRevenue = 0;
         $totalConversion = 0;
         $totalPurchases = 0;
-        
+
         foreach ($clusterProducts as $productIndex) {
             $totalRevenue += $features[$productIndex]['revenue'];
             $totalConversion += $features[$productIndex]['conversion_rate'];
             $totalPurchases += $features[$productIndex]['purchases'];
         }
-        
+
         $clusterStats[$cluster] = [
             'count' => count($clusterProducts),
             'avg_revenue' => $totalRevenue / count($clusterProducts),
@@ -264,8 +271,8 @@ $performanceScores = [];
 foreach ($clusterStats as $cluster => $stats) {
     // Composite performance score (you can adjust weights as needed)
     $performanceScores[$cluster] = (
-        $stats['avg_revenue'] * 0.4 + 
-        $stats['avg_conversion'] * 0.3 + 
+        $stats['avg_revenue'] * 0.4 +
+        $stats['avg_conversion'] * 0.3 +
         $stats['avg_purchases'] * 0.3
     );
 }
@@ -299,7 +306,7 @@ $updateStmt->close();
 // --- Performance-based cluster labels ---
 $clusterLabels = [
     0 => "High Performing",
-    1 => "Moderate Performing", 
+    1 => "Moderate Performing",
     2 => "Low Performing"
 ];
 
@@ -332,8 +339,10 @@ $totalProducts = count($filteredProducts);
 $totalPages = $totalProducts > 0 ? (int) ceil($totalProducts / $itemsPerPage) : 1;
 
 $currentPage = isset($_GET['page']) ? (int) $_GET['page'] : 1;
-if ($currentPage < 1) $currentPage = 1;
-if ($currentPage > $totalPages) $currentPage = $totalPages;
+if ($currentPage < 1)
+    $currentPage = 1;
+if ($currentPage > $totalPages)
+    $currentPage = $totalPages;
 
 $startIndex = ($currentPage - 1) * $itemsPerPage;
 $paginatedProducts = array_slice($filteredProducts, $startIndex, $itemsPerPage);
@@ -362,7 +371,7 @@ $paginatedProducts = array_slice($filteredProducts, $startIndex, $itemsPerPage);
             margin: 0 auto;
             background: white;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             padding: 30px;
         }
 
@@ -405,7 +414,7 @@ $paginatedProducts = array_slice($filteredProducts, $startIndex, $itemsPerPage);
 
         .tab:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .tab.active {
@@ -559,25 +568,33 @@ $paginatedProducts = array_slice($filteredProducts, $startIndex, $itemsPerPage);
             font-weight: bold;
         }
 
-        .conversion-rate.high { color: #28a745; }
-        .conversion-rate.medium { color: #ffc107; }
-        .conversion-rate.low { color: #dc3545; }
+        .conversion-rate.high {
+            color: #28a745;
+        }
+
+        .conversion-rate.medium {
+            color: #ffc107;
+        }
+
+        .conversion-rate.low {
+            color: #dc3545;
+        }
 
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
             }
-            
+
             table {
                 display: block;
                 overflow-x: auto;
                 white-space: nowrap;
             }
-            
+
             .tabs {
                 justify-content: center;
             }
-            
+
             .tab {
                 padding: 10px 15px;
                 font-size: 0.9em;
@@ -590,22 +607,16 @@ $paginatedProducts = array_slice($filteredProducts, $startIndex, $itemsPerPage);
     <div class="container">
         <h2>Product Performance Analysis</h2>
 
-        <!-- Cluster Performance Statistics -->
-        <div class="cluster-stats">
-            <h3>Cluster Analysis Summary</h3>
-            <p><strong>Algorithm:</strong> K-Means clustering with performance-based features (conversion rate, revenue, engagement, purchases)</p>
-            <p><strong>Clusters:</strong> Products are automatically categorized into High, Moderate, and Low performing groups based on their overall performance metrics.</p>
-        </div>
 
         <!-- Cluster Tabs -->
         <div class="tabs">
             <?php foreach ($clusterLabels as $clusterId => $label): ?>
-                <?php 
-                    $countInCluster = count(array_filter($products, fn($p) => $p['cluster'] === $clusterId));
-                    $labelClass = strtolower(str_replace(' ', '-', $label));
+                <?php
+                $countInCluster = count(array_filter($products, fn($p) => $p['cluster'] === $clusterId));
+                $labelClass = strtolower(str_replace(' ', '-', $label));
                 ?>
-                <a href="?cluster=<?= $clusterId ?>&page=1" 
-                   class="tab <?= $labelClass ?> <?= $clusterId === $selectedCluster ? 'active' : '' ?>">
+                <a href="?cluster=<?= $clusterId ?>&page=1"
+                    class="tab <?= $labelClass ?> <?= $clusterId === $selectedCluster ? 'active' : '' ?>">
                     <?= htmlspecialchars($label) ?> (<?= $countInCluster ?>)
                 </a>
             <?php endforeach; ?>
@@ -627,29 +638,35 @@ $paginatedProducts = array_slice($filteredProducts, $startIndex, $itemsPerPage);
             </thead>
             <tbody>
                 <?php if (empty($paginatedProducts)): ?>
-                    <tr><td colspan="8" class="no-products">No products found in this cluster.</td></tr>
+                    <tr>
+                        <td colspan="8" class="no-products">No products found in this cluster.</td>
+                    </tr>
                 <?php else: ?>
-                    <?php foreach ($paginatedProducts as $index => $prod): 
+                    <?php foreach ($paginatedProducts as $index => $prod):
                         $conversionRate = $prod['views'] > 0 ? ($prod['purchases'] / $prod['views']) * 100 : 0;
                         $revenue = $prod['purchases'] * $prod['price'];
-                        
+
                         $conversionClass = 'low';
-                        if ($conversionRate >= 10) $conversionClass = 'high';
-                        elseif ($conversionRate >= 5) $conversionClass = 'medium';
-                        
+                        if ($conversionRate >= 10)
+                            $conversionClass = 'high';
+                        elseif ($conversionRate >= 5)
+                            $conversionClass = 'medium';
+
                         $performanceClass = strtolower(str_replace(' ', '-', $clusterLabels[$prod['cluster']] ?? 'unknown'));
-                    ?>
+                        ?>
                         <tr>
                             <td><?= $startIndex + $index + 1 ?></td>
                             <td><strong><?= htmlspecialchars($prod['name']) ?></strong></td>
                             <td>NRs <?= number_format($prod['price'], 2) ?></td>
                             <td><?= number_format($prod['views']) ?></td>
                             <td><?= number_format($prod['purchases']) ?></td>
-                            <td><span class="conversion-rate <?= $conversionClass ?>"><?= number_format($conversionRate, 2) ?>%</span></td>
+                            <td><span
+                                    class="conversion-rate <?= $conversionClass ?>"><?= number_format($conversionRate, 2) ?>%</span>
+                            </td>
                             <td>NRs <?= number_format($revenue, 2) ?></td>
                             <td><span class="performance-badge <?= $performanceClass ?>">
-                                <?= htmlspecialchars($clusterLabels[$prod['cluster']] ?? 'N/A') ?>
-                            </span></td>
+                                    <?= htmlspecialchars($clusterLabels[$prod['cluster']] ?? 'N/A') ?>
+                                </span></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -658,42 +675,46 @@ $paginatedProducts = array_slice($filteredProducts, $startIndex, $itemsPerPage);
 
         <!-- Pagination Controls -->
         <?php if ($totalPages > 1): ?>
-        <div class="pagination" role="navigation" aria-label="Pagination">
-            <?php if ($currentPage > 1): ?>
-                <a href="?cluster=<?= $selectedCluster ?>&page=<?= $currentPage - 1 ?>" aria-label="Previous page">&laquo; Prev</a>
-            <?php else: ?>
-                <span class="disabled">&laquo; Prev</span>
-            <?php endif; ?>
-
-            <?php
-            $startPage = max(1, $currentPage - 2);
-            $endPage = min($totalPages, $currentPage + 2);
-            
-            if ($startPage > 1) {
-                echo '<a href="?cluster=' . $selectedCluster . '&page=1">1</a>';
-                if ($startPage > 2) echo '<span>...</span>';
-            }
-            
-            for ($p = $startPage; $p <= $endPage; $p++): ?>
-                <?php if ($p === $currentPage): ?>
-                    <span class="current" aria-current="page"><?= $p ?></span>
+            <div class="pagination" role="navigation" aria-label="Pagination">
+                <?php if ($currentPage > 1): ?>
+                    <a href="?cluster=<?= $selectedCluster ?>&page=<?= $currentPage - 1 ?>" aria-label="Previous page">&laquo;
+                        Prev</a>
                 <?php else: ?>
-                    <a href="?cluster=<?= $selectedCluster ?>&page=<?= $p ?>"><?= $p ?></a>
+                    <span class="disabled">&laquo; Prev</span>
                 <?php endif; ?>
-            <?php endfor;
-            
-            if ($endPage < $totalPages) {
-                if ($endPage < $totalPages - 1) echo '<span>...</span>';
-                echo '<a href="?cluster=' . $selectedCluster . '&page=' . $totalPages . '">' . $totalPages . '</a>';
-            }
-            ?>
 
-            <?php if ($currentPage < $totalPages): ?>
-                <a href="?cluster=<?= $selectedCluster ?>&page=<?= $currentPage + 1 ?>" aria-label="Next page">Next &raquo;</a>
-            <?php else: ?>
-                <span class="disabled">Next &raquo;</span>
-            <?php endif; ?>
-        </div>
+                <?php
+                $startPage = max(1, $currentPage - 2);
+                $endPage = min($totalPages, $currentPage + 2);
+
+                if ($startPage > 1) {
+                    echo '<a href="?cluster=' . $selectedCluster . '&page=1">1</a>';
+                    if ($startPage > 2)
+                        echo '<span>...</span>';
+                }
+
+                for ($p = $startPage; $p <= $endPage; $p++): ?>
+                    <?php if ($p === $currentPage): ?>
+                        <span class="current" aria-current="page"><?= $p ?></span>
+                    <?php else: ?>
+                        <a href="?cluster=<?= $selectedCluster ?>&page=<?= $p ?>"><?= $p ?></a>
+                    <?php endif; ?>
+                <?php endfor;
+
+                if ($endPage < $totalPages) {
+                    if ($endPage < $totalPages - 1)
+                        echo '<span>...</span>';
+                    echo '<a href="?cluster=' . $selectedCluster . '&page=' . $totalPages . '">' . $totalPages . '</a>';
+                }
+                ?>
+
+                <?php if ($currentPage < $totalPages): ?>
+                    <a href="?cluster=<?= $selectedCluster ?>&page=<?= $currentPage + 1 ?>" aria-label="Next page">Next
+                        &raquo;</a>
+                <?php else: ?>
+                    <span class="disabled">Next &raquo;</span>
+                <?php endif; ?>
+            </div>
         <?php endif; ?>
 
         <a href="admin_clusters.php" class="back-link">← Back to Home</a>
